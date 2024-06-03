@@ -5,12 +5,12 @@ import { destroy, formValueSelector, reduxForm } from 'redux-form'
 
 import { getDomains } from '@core/redux/walletOptions/selectors'
 import FlyoutContainer from 'components/Flyout/Container'
-import { actions } from 'data'
+import { components, custodial } from 'data/actions'
 import { getFiatCurrency } from 'data/components/withdraw/selectors'
 import { getUserApiToken } from 'data/modules/profile/selectors'
 import { BankDWStepType } from 'data/types'
 
-import Loading from '../EnterAmount/template.loading'
+import WithdrawLoading from '../WithdrawLoading'
 import ConfirmData from './Steps/ConfirmData'
 import { WIRE_BANK_FORM } from './Steps/constants'
 import EnterIntermediaryBank from './Steps/EnterIntermediaryData'
@@ -52,18 +52,18 @@ const AddWireBank = () => {
     shallowEqual
   ) as WireBankFormType
 
-  const currency = useSelector(getFiatCurrency)
+  const fiatCurrency = useSelector(getFiatCurrency)
   const nabuToken = useSelector(getUserApiToken)
 
   const {
     data: { api }
   } = useSelector(getDomains)
 
-  const alreadyLinked = useRef(false)
+  const errorInfo = useRef<{ message?: string; title?: string }>({})
 
   const resetForm = () => {
     dispatch(destroy(WIRE_BANK_FORM))
-    dispatch(actions.components.brokerage.setDWStep({ dwStep: BankDWStepType.DEPOSIT_METHODS }))
+    dispatch(components.brokerage.setDWStep({ dwStep: BankDWStepType.DEPOSIT_METHODS }))
   }
 
   const onSubmit = async () => {
@@ -80,7 +80,7 @@ const AddWireBank = () => {
     const payload: FORM_PAYLOAD = {
       accountNumber,
       bankName,
-      currency,
+      currency: fiatCurrency,
       routingNumber
     }
 
@@ -98,8 +98,9 @@ const AddWireBank = () => {
         headers: { 'Content-Type': 'application/json', authorization: `Bearer ${nabuToken}` }
       })
       setStep('SUCCESS')
-    } catch (error) {
-      alreadyLinked.current = error.dataFields.description.includes('already exists')
+      dispatch(custodial.fetchCustodialBeneficiaries({ currency: fiatCurrency }))
+    } catch ({ message, title }) {
+      errorInfo.current = { message, title }
       setStep('FAILURE')
     }
   }
@@ -113,21 +114,23 @@ const AddWireBank = () => {
             onClickBack={() => setStep('USER_INFO')}
           />
         )
-      case 'CONFIRM_DATA':
+      case 'CONFIRM_DATA': {
         const prevStep =
           formValues.hasIntermediaryBank === 'YES' ? 'INTERMEDIARY_INFO' : 'USER_INFO'
         return <ConfirmData onNextStep={() => onSubmit()} onClickBack={() => setStep(prevStep)} />
+      }
       case 'LOADING':
-        return <Loading />
+        return <WithdrawLoading />
       case 'SUCCESS':
-        return <Success bankName={formValues?.bankName ?? ''} />
+        return <Success bankName={formValues?.bankName ?? ''} fiatCurrency={fiatCurrency} />
       case 'FAILURE':
-        return <Failure alreadyLinked={alreadyLinked.current} />
+        return <Failure title={errorInfo.current.title} message={errorInfo.current.message} />
       case 'USER_INFO':
-      default:
+      default: {
         const nextStep =
           formValues.hasIntermediaryBank === 'YES' ? 'INTERMEDIARY_INFO' : 'CONFIRM_DATA'
         return <EnterUserData onNextStep={() => setStep(nextStep)} onClickBack={resetForm} />
+      }
     }
   }
 

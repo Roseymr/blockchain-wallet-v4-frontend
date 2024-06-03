@@ -1,5 +1,6 @@
 import React from 'react'
 import { isValidBIC, isValidIBAN } from 'ibantools'
+import { isValidNumber } from 'libphonenumber-js'
 import { all, any, equals, gt, prop, propOr } from 'ramda'
 
 import { utils } from '@core'
@@ -210,8 +211,14 @@ export const validFormat = (regex) => (value) => {
   return new RegExp(regex).test(value) ? undefined : <M.InvalidFormat />
 }
 
+export const onlyNumbers = (value) =>
+  Number.isNaN(Number(value)) ? 'Can only be numbers' : undefined
+
 export const validRoutingNumber = (value) =>
   value?.length !== 9 && <span>Must be 9 digits long</span>
 
-export const validBankName = (value) =>
-  value?.length > 18 && <span>Bank Name can only be a max of 18 characters long</span>
+export const maxLength = (length) => (value) =>
+  value?.length > length && <span>Can&apos;t be more than {length} characters long</span>
+
+export const validMobileNumber = (value) =>
+  isValidNumber(value) ? undefined : <M.InvalidMobileNumber />

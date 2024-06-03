@@ -9,6 +9,7 @@ import { WalletOptionsType } from './types'
 // general
 export const getOptions = (state: RootState) => state.walletOptions.details
 export const getDomains = (state) => getOptions(state).map((x) => x.domains)
+export const getDomainApi = (state) => getOptions(state).map((x) => x.domains.api)
 export const getWebOptions = (state) =>
   getOptions(state).map(path(['platforms', 'web'])) as RemoteDataType<
     string,
@@ -163,9 +164,17 @@ export const getSecureEmailSmsUpdate = (state: RootState) =>
 export const getDexProductEnabled = (state: RootState) =>
   getWebOptions(state).map(path(['featureFlags', 'dex']))
 
+// dex feature flag
+export const getMnemonicRecoveryEnabled = (state: RootState) =>
+  getWebOptions(state).map(path(['featureFlags', 'isMnemonicRecoveryEnabled']))
+
 // staking feature flag
 export const getIsStakingEnabled = (state: RootState) =>
   getWebOptions(state).map(path(['featureFlags', 'isStakingEnabled']))
+
+// Super app link out feature flag
+export const getIsSuperAppEnabled = (state: RootState) =>
+  getWebOptions(state).map(path(['featureFlags', 'isSuperAppEnabled']))
 
 // crates nabu user at login if credentials aren't in metadata
 export const createNabuUserAtLogin = (state: RootState) =>
@@ -227,6 +236,8 @@ export const getImportedAddressSweep = (state: RootState) =>
 export const getProveEnabled = (state: RootState) =>
   getWebOptions(state).map(path(['featureFlags', 'proveEnabled']))
 
+export const getFiatEntityRemediationAlert = (state: RootState) =>
+  getWebOptions(state).map(path(['featureFlags', 'showFiatEntityRemediationAlert']))
 // sofi
 // sofi associate before email verification
 export const getAssociateSofiBeforeEmailVerification = (state: RootState) =>

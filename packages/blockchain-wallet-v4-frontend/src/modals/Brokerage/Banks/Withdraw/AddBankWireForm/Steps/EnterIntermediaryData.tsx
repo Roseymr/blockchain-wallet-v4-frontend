@@ -1,38 +1,23 @@
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
-import { useSelector } from 'react-redux'
-import { Field, formValueSelector, reduxForm } from 'redux-form'
+import { Field, reduxForm } from 'redux-form'
 
 import { Button, Text } from 'blockchain-info-components'
 import FlyoutFooter from 'components/Flyout/Footer'
 import FormLabel from 'components/Form/FormLabel'
-import NumberBox from 'components/Form/NumberBox'
 import TextBox from 'components/Form/TextBox'
-import { required, validBankName, validRoutingNumber } from 'services/forms'
+import { maxLength, onlyNumbers, required, validRoutingNumber } from 'services/forms'
 
 import { Header } from '../Header'
 import { WIRE_BANK_FORM } from './constants'
 import { FieldsWrapper } from './StepsStyles'
-import { StepProps, WireBankFormType } from './StepsTypes'
+import { StepFormProps, StepProps } from './StepsTypes'
 
-const EnterIntermediaryBank = ({ onClickBack, onNextStep }: StepProps) => {
-  const { intermediaryAccountNumber, intermediaryBankName, intermediaryRoutingNumber } =
-    useSelector((state) =>
-      formValueSelector(WIRE_BANK_FORM)(
-        state,
-        'intermediaryBankName',
-        'intermediaryRoutingNumber',
-        'intermediaryAccountNumber'
-      )
-    ) as WireBankFormType
+const validBankName = maxLength(35)
 
-  const disabled =
-    [intermediaryBankName, intermediaryAccountNumber].some((val) => !val || val.length === 0) ||
-    intermediaryRoutingNumber.length !== 9 ||
-    intermediaryBankName.length > 18
-
+const EnterIntermediaryBank = ({ invalid, onClickBack, onNextStep }: StepFormProps) => {
   const handleNext = () => {
-    if (disabled) return undefined
+    if (invalid) return
     onNextStep()
   }
 
@@ -59,6 +44,7 @@ const EnterIntermediaryBank = ({ onClickBack, onNextStep }: StepProps) => {
             name='intermediaryBankName'
             noLastPass
             validate={[required, validBankName]}
+            errorBottom
           />
         </div>
         <div>
@@ -69,12 +55,13 @@ const EnterIntermediaryBank = ({ onClickBack, onNextStep }: StepProps) => {
             />
           </FormLabel>
           <Field
-            component={NumberBox}
+            component={TextBox}
             placeholder='Enter 9-digit routing number'
             data-e2e='intermediaryRoutingNumber'
             name='intermediaryRoutingNumber'
             noLastPass
-            validate={[required, validRoutingNumber]}
+            validate={[required, onlyNumbers, validRoutingNumber]}
+            errorBottom
           />
         </div>
         <div>
@@ -85,13 +72,14 @@ const EnterIntermediaryBank = ({ onClickBack, onNextStep }: StepProps) => {
             />
           </FormLabel>
           <Field
-            component={NumberBox}
+            component={TextBox}
             type='number'
             placeholder='Enter account number'
             data-e2e='intermediaryAccountNumber'
             name='intermediaryAccountNumber'
             noLastPass
-            validate={[required]}
+            validate={[required, onlyNumbers]}
+            errorBottom
           />
         </div>
       </FieldsWrapper>
@@ -101,7 +89,7 @@ const EnterIntermediaryBank = ({ onClickBack, onNextStep }: StepProps) => {
           fullwidth
           nature='primary'
           onClick={handleNext}
-          disabled={disabled}
+          disabled={invalid}
         >
           Next
         </Button>

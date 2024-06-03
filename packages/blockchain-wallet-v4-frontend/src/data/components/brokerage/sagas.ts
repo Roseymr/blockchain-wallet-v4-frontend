@@ -1,5 +1,4 @@
 import { getFormValues } from 'redux-form'
-import { END } from 'redux-saga'
 import { call, delay, put, race, retry, select, take } from 'redux-saga/effects'
 
 import { Remote } from '@core'
@@ -44,16 +43,27 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas: any; ne
     coreSagas,
     networks
   })
-  const deleteSavedBank = function* ({ payload: bankId }: ReturnType<typeof A.deleteSavedBank>) {
+  const deleteSavedBank = function* ({
+    payload: { bankId, bankType = 'banktransfer' }
+  }: ReturnType<typeof A.deleteSavedBank>) {
     try {
       yield put(actions.form.startSubmit('linkedBanks'))
-      yield call(api.deleteSavedAccount, bankId, 'banktransfer')
-      yield put(A.fetchBankTransferAccounts())
-      yield take([A.fetchBankTransferAccountsSuccess.type, A.fetchBankTransferAccountsError.type])
-      yield put(actions.form.stopSubmit('linkedBanks'))
-      yield put(actions.alerts.displaySuccess('Bank removed.'))
+      yield call(api.deleteSavedAccount, bankId, bankType)
+      if (bankType === 'banktransfer') {
+        yield put(A.fetchBankTransferAccounts())
+        yield take([A.fetchBankTransferAccountsSuccess.type, A.fetchBankTransferAccountsError.type])
+      } else {
+        yield put(actions.custodial.fetchCustodialBeneficiaries({}))
+        yield take([
+          actions.custodial.fetchCustodialBeneficiariesSuccess.type,
+          actions.custodial.fetchCustodialBeneficiariesFailure.type
+        ])
+      }
       yield put(actions.modals.closeModal(ModalName.BANK_DETAILS_MODAL))
       yield put(actions.modals.closeModal(ModalName.REMOVE_BANK_MODAL))
+      yield put(actions.form.stopSubmit('linkedBanks'))
+      yield put(actions.form.destroy('linkedBanks'))
+      yield put(actions.alerts.displaySuccess('Bank removed.'))
     } catch (e) {
       const error = errorHandler(e)
       yield put(actions.form.stopSubmit('linkedBanks', { _error: error }))
@@ -598,7 +608,7 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas: any; ne
       { settlementRequest: { amount, product: ProductTypes.SIMPLEBUY } }
     )
 
-    const { reason, settlementType } = status.attributes?.settlementResponse
+    const { reason, settlementType } = status.attributes?.settlementResponse ?? {}
 
     if (settlementType === 'UNAVAILABLE' || reason === 'REQUIRES_UPDATE') {
       yield put(

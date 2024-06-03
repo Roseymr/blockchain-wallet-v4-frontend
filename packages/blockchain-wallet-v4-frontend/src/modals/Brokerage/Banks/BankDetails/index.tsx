@@ -1,24 +1,29 @@
 import React, { useEffect, useState } from 'react'
-import { useSelector } from 'react-redux'
-import { compose } from 'redux'
 
 import Flyout, { duration, FlyoutChild } from 'components/Flyout'
-import { selectors } from 'data'
 import { ModalName } from 'data/types'
 import ModalEnhancer from 'providers/ModalEnhancer'
 
 import { ModalPropsType } from '../../../types'
 import Template from './template'
+import { BankDetailsModalProps } from './types'
 
-const BankDetails = (props: ModalPropsType) => {
+const BankDetails = ({
+  accountId,
+  accountNumber,
+  accountType,
+  bankName,
+  bankType,
+  close,
+  position,
+  total
+}: BankDetailsModalProps & ModalPropsType) => {
   const [show, setShow] = useState(false)
-
-  const account = useSelector(selectors.components.brokerage.getAccount)
 
   const handleClose = () => {
     setShow(false)
     setTimeout(() => {
-      props.close()
+      close()
     }, duration)
   }
 
@@ -26,17 +31,28 @@ const BankDetails = (props: ModalPropsType) => {
     setShow(true)
   }, [])
 
-  if (!account) return null
+  if (!accountId) return null
 
   return (
-    <Flyout {...props} onClose={handleClose} isOpen={show} data-e2e='bankDetailsModal'>
+    <Flyout
+      total={total}
+      position={position}
+      onClose={handleClose}
+      isOpen={show}
+      data-e2e='bankDetailsModal'
+    >
       <FlyoutChild>
-        <Template account={account} handleClose={handleClose} />
+        <Template
+          handleClose={handleClose}
+          accountId={accountId}
+          accountType={accountType}
+          bankType={bankType}
+          accountNumber={accountNumber}
+          bankName={bankName}
+        />
       </FlyoutChild>
     </Flyout>
   )
 }
 
-const enhance = compose(ModalEnhancer(ModalName.BANK_DETAILS_MODAL, { transition: duration }))
-
-export default enhance(BankDetails)
+export default ModalEnhancer(ModalName.BANK_DETAILS_MODAL, { transition: duration })(BankDetails)

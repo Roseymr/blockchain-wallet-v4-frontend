@@ -1,14 +1,14 @@
+import { TIER_TYPES } from 'blockchain-wallet-v4-frontend/src/modals/Settings/TradingLimits/model'
 import { lift } from 'ramda'
 
 import { BSPaymentMethodsType, BSPaymentTypes, InvitationsType, RemoteDataType } from '@core/types'
 import { selectors } from 'data'
 import { RootState } from 'data/rootReducer'
-import { UserDataType } from 'data/types'
 
 type SuccessStateType = {
   paymentMethods: BSPaymentMethodsType
-  plaidEnabled: boolean
-  userData: UserDataType
+  userCountryCode: string
+  userTier: TIER_TYPES
 }
 
 const getData = (state: RootState): RemoteDataType<string, SuccessStateType> => {
@@ -18,23 +18,23 @@ const getData = (state: RootState): RemoteDataType<string, SuccessStateType> => 
     openBanking: false
   } as InvitationsType)
 
-  const plaidEnabledR = selectors.core.walletOptions.getAddPlaidPaymentProvider(state)
-  const userDataR = selectors.modules.profile.getUserData(state)
+  const userTier = selectors.modules.profile.getCurrentTier(state)
+  const userCountryCode = selectors.modules.profile.getUserCountryCode(state)
 
   const filterPaymentMethods = (methods) => {
     return methods.filter((m) => m.type === BSPaymentTypes.BANK_ACCOUNT || m.currency === 'USD')
   }
 
-  return lift((paymentMethods, plaidEnabled, userData) => ({
+  return lift((paymentMethods, userTier, userCountryCode) => ({
     paymentMethods: invitations.openBanking
       ? paymentMethods
       : {
           ...paymentMethods,
           methods: filterPaymentMethods(paymentMethods.methods)
         },
-    plaidEnabled,
-    userData
-  }))(paymentMethodsR, plaidEnabledR, userDataR)
+    userCountryCode,
+    userTier
+  }))(paymentMethodsR, userTier, userCountryCode)
 }
 
 export default getData

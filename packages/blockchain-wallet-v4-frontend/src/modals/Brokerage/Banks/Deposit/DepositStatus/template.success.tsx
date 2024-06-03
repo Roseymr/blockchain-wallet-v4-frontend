@@ -1,10 +1,9 @@
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
-import { InjectedFormProps } from 'redux-form'
 import styled from 'styled-components'
 
 import { fiatToString } from '@core/exchange/utils'
-import { BSTransactionStateEnum, FiatType } from '@core/types'
+import { BSTransactionStateEnum } from '@core/types'
 import { Button, Icon, Text } from 'blockchain-info-components'
 import { FlyoutWrapper } from 'components/Flyout'
 import { BankPartners } from 'data/types'
@@ -118,7 +117,10 @@ const Success: React.FC<Props> = ({ defaultMethod, formValues, handleClose }) =>
               <FormattedMessage
                 id='modals.brokerage.deposit_success.wait_description'
                 defaultMessage='While we wait for your bank to send the cash, here’s early access to {amount} in your {currency} Cash Account so you can buy crypto right away.'
-                values={messageValue}
+                values={{
+                  amount: messageValue,
+                  currency: coin
+                }}
               />
             )}
           </DescriptionText>

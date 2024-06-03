@@ -61,6 +61,8 @@
         "isReferralRetrievalEnabled": true,
         "isStakingEnabled": true,
         "isStakingWithdrawalEnabled": true,
+        "isSuperAppEnabled": true,
+        "isMnemonicRecoveryEnabled": true,
         "mergeAndUpgrade": false,
         "nftExplorer": true,
         "recurringBuys": true,
@@ -85,7 +87,8 @@
         "useVgsProvider": true,
         "walletConnect": true,
         "walletDebitCardEnabled": true,
-        "proveEnabled": true
+        "proveEnabled": true,
+        "showFiatEntityRemediationAlert": true
       }
     }
   },

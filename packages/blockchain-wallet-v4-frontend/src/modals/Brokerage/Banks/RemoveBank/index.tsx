@@ -1,24 +1,28 @@
 import React, { useEffect, useState } from 'react'
-import { useSelector } from 'react-redux'
-import { compose } from 'redux'
 
 import Flyout, { duration, FlyoutChild } from 'components/Flyout'
-import { selectors } from 'data'
 import { ModalName } from 'data/types'
 import ModalEnhancer from 'providers/ModalEnhancer'
 
 import { ModalPropsType } from '../../../types'
 import Template from './template'
+import { RemoveBankModalProps } from './types'
 
-const RemoveBankFlyout = (props: ModalPropsType) => {
+const RemoveBank = ({
+  accountId,
+  accountNumber,
+  bankName,
+  bankType,
+  close,
+  position,
+  total
+}: RemoveBankModalProps & ModalPropsType) => {
   const [show, setShow] = useState(false)
-
-  const account = useSelector(selectors.components.brokerage.getAccount)
 
   const handleClose = () => {
     setShow(false)
     setTimeout(() => {
-      props.close()
+      close()
     }, duration)
   }
 
@@ -26,17 +30,29 @@ const RemoveBankFlyout = (props: ModalPropsType) => {
     setShow(true)
   }, [])
 
-  if (!account) return null
+  if (!accountId) return null
+
+  const entityType = bankType === 'BANK_ACCOUNT' ? 'banks' : 'banktransfer'
 
   return (
-    <Flyout {...props} onClose={handleClose} isOpen={show} data-e2e='bankRemoveModal'>
+    <Flyout
+      total={total}
+      position={position}
+      onClose={handleClose}
+      isOpen={show}
+      data-e2e='bankRemoveModal'
+    >
       <FlyoutChild>
-        <Template account={account} handleClose={handleClose} />
+        <Template
+          handleClose={handleClose}
+          accountId={accountId}
+          accountNumber={accountNumber}
+          bankName={bankName}
+          entityType={entityType}
+        />
       </FlyoutChild>
     </Flyout>
   )
 }
 
-const enhance = compose(ModalEnhancer(ModalName.REMOVE_BANK_MODAL, { transition: duration }))
-
-export default enhance(RemoveBankFlyout)
+export default ModalEnhancer(ModalName.REMOVE_BANK_MODAL, { transition: duration })(RemoveBank)

@@ -2,6 +2,7 @@ import BigNumber from 'bignumber.js'
 import { getQuote } from 'blockchain-wallet-v4-frontend/src/modals/BuySell/SellEnterAmount/Checkout/validation'
 import { defaultTo, filter, prop } from 'ramda'
 import { call, cancel, delay, fork, put, retry, select, take } from 'redux-saga/effects'
+import { call as typedCall } from 'typed-redux-saga'
 
 import { Remote } from '@core'
 import { APIType } from '@core/network/api'
@@ -399,8 +400,14 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas: any; ne
         // @ts-ignore
         const payment = paymentGetOrElse(from.coin, paymentR)
         try {
-          yield call(buildAndPublishPayment, payment.coin, payment, sellOrderDepositAddress)
-          yield call(api.updateSwapOrder, sellOrder.id, 'DEPOSIT_SENT')
+          const transaction = yield call(
+            buildAndPublishPayment,
+            payment.coin,
+            payment,
+            sellOrderDepositAddress
+          )
+          const depositTxHash = transaction?.txId ?? undefined
+          yield call(api.updateSwapOrder, sellOrder.id, 'DEPOSIT_SENT', depositTxHash)
         } catch (e) {
           yield call(api.updateSwapOrder, sellOrder.id, 'CANCEL')
           throw e
@@ -2032,6 +2039,18 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas: any; ne
 
     // show sanctions for buy
     if (products?.buy?.reasonNotEligible) {
+      if (products.buy.reasonNotEligible.reason === 'NOT_ELIGIBLE') {
+        const steps = yield* typedCall(api.fetchVerificationSteps)
+        if (steps !== '' && steps.items[steps.items.length - 1].status === 'DISABLED') {
+          yield put(
+            actions.modals.showModal(ModalName.COMPLETE_USER_PROFILE, { origin: 'BuySellInit' })
+          )
+          yield put(actions.modals.closeModal(ModalName.SIMPLE_BUY_MODAL))
+
+          return
+        }
+      }
+
       const message =
         products.buy.reasonNotEligible.reason !== CustodialSanctionsEnum.EU_5_SANCTION
           ? products.buy.reasonNotEligible.message
@@ -2049,6 +2068,18 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas: any; ne
     }
     // show sanctions for sell
     if (products?.sell?.reasonNotEligible && orderType === OrderType.SELL) {
+      if (products.sell.reasonNotEligible.reason === 'NOT_ELIGIBLE') {
+        const steps = yield* typedCall(api.fetchVerificationSteps)
+        if (steps !== '' && steps.items[steps.items.length - 1].status === 'DISABLED') {
+          yield put(
+            actions.modals.showModal(ModalName.COMPLETE_USER_PROFILE, { origin: 'BuySellInit' })
+          )
+          yield put(actions.modals.closeModal(ModalName.SIMPLE_BUY_MODAL))
+
+          return
+        }
+      }
+
       const message =
         products.sell.reasonNotEligible.reason !== CustodialSanctionsEnum.EU_5_SANCTION
           ? products.sell.reasonNotEligible.message
@@ -2144,7 +2175,9 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas: any; ne
 
   const switchFix = function* ({ payload }: ReturnType<typeof A.switchFix>) {
     yield put(actions.form.change(FORM_BS_CHECKOUT, 'fix', payload.fix))
-    yield put(actions.preferences.setBSCheckoutFix(payload.orderType, payload.fix))
+    yield put(
+      actions.preferences.setBSCheckoutFix({ fix: payload.fix, orderType: payload.orderType })
+    )
     const newAmount = new BigNumber(payload.amount).isGreaterThan(0) ? payload.amount : undefined
     yield put(actions.form.change(FORM_BS_CHECKOUT, 'amount', newAmount))
     yield put(actions.form.focus(FORM_BS_CHECKOUT, 'amount'))

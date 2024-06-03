@@ -1,43 +1,23 @@
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
-import { useSelector } from 'react-redux'
-import { Field, formValueSelector, reduxForm } from 'redux-form'
+import { Field, InjectedFormProps, reduxForm } from 'redux-form'
 
 import { Button, Text } from 'blockchain-info-components'
 import FlyoutFooter from 'components/Flyout/Footer'
 import FormLabel from 'components/Form/FormLabel'
-import NumberBox from 'components/Form/NumberBox'
 import TextBox from 'components/Form/TextBox'
-import { required, validBankName, validRoutingNumber } from 'services/forms'
+import { maxLength, onlyNumbers, required, validRoutingNumber } from 'services/forms'
 
 import { Header } from '../Header'
 import { WIRE_BANK_FORM } from './constants'
 import { FieldsWrapper } from './StepsStyles'
-import { StepProps, WireBankFormType } from './StepsTypes'
+import { StepFormProps, StepProps } from './StepsTypes'
 
-const EnterUserData = ({ onClickBack, onNextStep }: StepProps) => {
-  const { accountNumber, bankName, hasIntermediaryBank, routingNumber } = useSelector((state) =>
-    formValueSelector(WIRE_BANK_FORM)(
-      state,
-      'routingNumber',
-      'accountNumber',
-      'bankName',
-      'hasIntermediaryBank'
-    )
-  ) as WireBankFormType
+const validBankName = maxLength(35)
 
-  const hasBasicRoutingInfo = accountNumber?.length > 0 && routingNumber?.length === 9
-  const missingData = [routingNumber, accountNumber, bankName, hasIntermediaryBank].some((e) => !e)
-
-  const disabled =
-    !hasBasicRoutingInfo ||
-    missingData ||
-    bankName.length === 0 ||
-    bankName.length > 18 ||
-    hasIntermediaryBank.length === 0
-
+const EnterUserData = ({ invalid, onClickBack, onNextStep }: StepFormProps) => {
   const handleNext = () => {
-    if (disabled) return undefined
+    if (invalid) return
     onNextStep()
   }
 
@@ -65,6 +45,7 @@ const EnterUserData = ({ onClickBack, onNextStep }: StepProps) => {
             data-e2e='bankName'
             name='bankName'
             validate={[required, validBankName]}
+            errorBottom
           />
         </div>
 
@@ -80,11 +61,12 @@ const EnterUserData = ({ onClickBack, onNextStep }: StepProps) => {
             bank&apos;s ACH routing number
           </Text>
           <Field
-            component={NumberBox}
+            component={TextBox}
             placeholder='Enter 9-digit Routing Number'
             data-e2e='routingNumber'
             name='routingNumber'
-            validate={[required, validRoutingNumber]}
+            validate={[required, onlyNumbers, validRoutingNumber]}
+            errorBottom
           />
         </div>
         <div>
@@ -95,13 +77,14 @@ const EnterUserData = ({ onClickBack, onNextStep }: StepProps) => {
             />
           </FormLabel>
           <Field
-            component={NumberBox}
+            component={TextBox}
             type='number'
             placeholder='Enter account number'
             data-e2e='accountNumber'
             name='accountNumber'
             noLastPass
-            validate={[required]}
+            validate={[required, onlyNumbers]}
+            errorBottom
           />
         </div>
 
@@ -149,7 +132,7 @@ const EnterUserData = ({ onClickBack, onNextStep }: StepProps) => {
           fullwidth
           nature='primary'
           onClick={handleNext}
-          disabled={disabled}
+          disabled={invalid}
         >
           Next
         </Button>
@@ -158,6 +141,10 @@ const EnterUserData = ({ onClickBack, onNextStep }: StepProps) => {
   )
 }
 
-export default reduxForm<{}, StepProps>({ destroyOnUnmount: false, form: 'addWireBank' })(
-  EnterUserData
-)
+export default reduxForm<{}, StepProps>({
+  destroyOnUnmount: false,
+  form: WIRE_BANK_FORM,
+  initialValues: {
+    hasIntermediaryBank: 'NO'
+  }
+})(EnterUserData)
